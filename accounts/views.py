@@ -6,6 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
+from urllib3 import request
 
 
 @csrf_exempt
@@ -41,31 +42,26 @@ def signup_api(request):
      
      return JsonResponse({'message':"Invalid request Method"},status=400)
 
-def login_page(request):
-    if request.user.is_authenticated:
-            return redirect('home')
-    if request.method=='POST':
-        username=request.POST.get('username')
-        password=request.POST.get('password')
+@csrf_exempt
+def login_api(request):
+    if request.method=="POST":
+        data=json.loads(request.body)
+        username=data.get("username")
+        password=data.get("password")
 
         if not username or not password:
-            messages.error(
-                request,
-                'All fields are required'
-            )
-            return render(request, 'login.html')
-        user=authenticate(request,username=username,password=password)
+            return JsonResponse({'message':"All fields are required"},status=400)
         
+        user=authenticate(request,username=username,password=password)
 
         if user is not None:
             login(request,user)
-            messages.success(request,'Login successful')
-            return redirect('home')
-    
+            return JsonResponse({'message':"Login successful"},status=200) 
+         
         else:
-            messages.error(request,'Invalid username or password')
+            return JsonResponse({'message':"Invalid username or password"},status=400)
         
-    return render(request,'login.html')
+        return JsonResponse({'message':"Invalid request method"},status=400)
 
 
 @login_required(login_url='login')
